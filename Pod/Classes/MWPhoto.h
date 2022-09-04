@@ -20,6 +20,10 @@
 @property (nonatomic, strong) NSURL *videoURL;
 @property (nonatomic) BOOL emptyImage;
 @property (nonatomic) BOOL isVideo;
+@property (nonatomic, readonly) UIImage *image;
+@property (nonatomic, readonly) NSData *data;
+@property (nonatomic, readonly) NSURL *photoURL;
+@property (nonatomic, readonly) NSString *filePath  __attribute__((deprecated("Use photoURL"))); // Depreciated
 
 + (MWPhoto *)photoWithImage:(UIImage *)image;
 + (MWPhoto *)photoWithURL:(NSURL *)url;

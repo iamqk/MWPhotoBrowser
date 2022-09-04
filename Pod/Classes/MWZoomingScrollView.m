@@ -92,6 +92,7 @@
     self.playButton = nil;
     _photoImageView.hidden = NO;
     _photoImageView.image = nil;
+    _photoImageView.animatedImage = nil;
     _index = NSUIntegerMax;
 }
 
@@ -113,7 +114,7 @@
         }
     }
     _photo = photo;
-    UIImage *img = [_photoBrowser imageForPhoto:_photo];
+    id img = [_photoBrowser imageForPhoto:_photo];
     if (img) {
         [self displayImage];
     } else {
@@ -124,7 +125,7 @@
 
 // Get and display image
 - (void)displayImage {
-	if (_photo && _photoImageView.image == nil) {
+	if (_photo && _photoImageView.animatedImage == nil) {
 		
 		// Reset
 		self.maximumZoomScale = 1;
@@ -133,20 +134,27 @@
 		self.contentSize = CGSizeMake(0, 0);
 		
 		// Get image from browser as it handles ordering of fetching
-		UIImage *img = [_photoBrowser imageForPhoto:_photo];
+		id img = [_photoBrowser imageForPhoto:_photo];
 		if (img) {
 			
 			// Hide indicator
 			[self hideLoadingIndicator];
 			
+            CGRect photoImageViewFrame;
+
 			// Set image
-			_photoImageView.image = img;
+            if ([img isKindOfClass:[NSData class]]) {
+                FLAnimatedImage *image = [[FLAnimatedImage alloc] initWithAnimatedGIFData:img];
+                _photoImageView.animatedImage = image;
+                photoImageViewFrame.size = image.posterImage.size;
+            } else {
+                _photoImageView.image = img;
+                photoImageViewFrame.size = ((UIImage *)img).size;
+            }
 			_photoImageView.hidden = NO;
 			
 			// Setup photo frame
-			CGRect photoImageViewFrame;
 			photoImageViewFrame.origin = CGPointZero;
-			photoImageViewFrame.size = img.size;
 			_photoImageView.frame = photoImageViewFrame;
 			self.contentSize = photoImageViewFrame.size;
 
@@ -167,6 +175,7 @@
 - (void)displayImageFailure {
     [self hideLoadingIndicator];
     _photoImageView.image = nil;
+    _photoImageView.animatedImage = nil;
     
     // Show if image is not empty
     if (![_photo respondsToSelector:@selector(emptyImage)] || !_photo.emptyImage) {
@@ -226,7 +235,7 @@
     if (_photoImageView && _photoBrowser.zoomPhotosToFill) {
         // Zoom image to fill if the aspect ratios are fairly similar
         CGSize boundsSize = self.bounds.size;
-        CGSize imageSize = _photoImageView.image.size;
+        CGSize imageSize = _photoImageView.animatedImage.size;
         CGFloat boundsAR = boundsSize.width / boundsSize.height;
         CGFloat imageAR = imageSize.width / imageSize.height;
         CGFloat xScale = boundsSize.width / imageSize.width;    // the scale needed to perfectly fit the image width-wise
@@ -249,14 +258,19 @@
     self.zoomScale = 1;
     
     // Bail if no image
-    if (_photoImageView.image == nil) return;
+    if (_photoImageView.animatedImage == nil && _photoImageView.image == nil) return;
     
     // Reset position
     _photoImageView.frame = CGRectMake(0, 0, _photoImageView.frame.size.width, _photoImageView.frame.size.height);
 	
     // Sizes
     CGSize boundsSize = self.bounds.size;
-    CGSize imageSize = _photoImageView.image.size;
+    CGSize imageSize;
+    if (_photoImageView.animatedImage) {
+        imageSize = _photoImageView.animatedImage.size;
+    } else {
+        imageSize = _photoImageView.image.size;
+    }
     
     // Calculate Min
     CGFloat xScale = boundsSize.width / imageSize.width;    // the scale needed to perfectly fit the image width-wise

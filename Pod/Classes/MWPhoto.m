@@ -12,6 +12,7 @@
 #import <AssetsLibrary/AssetsLibrary.h>
 #import "MWPhoto.h"
 #import "MWPhotoBrowser.h"
+#import "UIImage+GIF.h"
 
 @interface MWPhoto () {
 
@@ -34,6 +35,7 @@
 @implementation MWPhoto
 
 @synthesize underlyingImage = _underlyingImage; // synth property from protocol
+@synthesize underlyingImageData = _underlyingImageData; // synth property from protocol
 
 #pragma mark - Class Methods
 
@@ -145,12 +147,16 @@
     return _underlyingImage;
 }
 
+- (NSData *)underlyingImageData {
+    return _underlyingImageData;
+}
+
 - (void)loadUnderlyingImageAndNotify {
     NSAssert([[NSThread currentThread] isMainThread], @"This method must be called on the main thread.");
     if (_loadingInProgress) return;
     _loadingInProgress = YES;
     @try {
-        if (self.underlyingImage) {
+        if (self.underlyingImage || self.underlyingImageData) {
             [self imageLoadingComplete];
         } else {
             [self performLoadUnderlyingImageAndNotify];
@@ -158,6 +164,7 @@
     }
     @catch (NSException *exception) {
         self.underlyingImage = nil;
+        self.underlyingImageData = nil;
         _loadingInProgress = NO;
         [self imageLoadingComplete];
     }
@@ -169,10 +176,11 @@
 - (void)performLoadUnderlyingImageAndNotify {
     
     // Get underlying image
-    if (_image) {
+    if (_image || _data) {
         
         // We have UIImage!
         self.underlyingImage = _image;
+        self.underlyingImageData = _data;
         [self imageLoadingComplete];
         
     } else if (_photoURL) {
@@ -251,7 +259,12 @@
                                                          MWLog(@"SDWebImage failed to download image: %@", error);
                                                      }
                                                      _webImageOperation = nil;
-                                                     self.underlyingImage = image;
+                    
+                                                    if ([[url.absoluteString lowercaseString] containsString:@"gif"]) {
+                                                        self.underlyingImageData = data;
+                                                    } else {
+                                                        self.underlyingImage = image;
+                                                    }
                                                      dispatch_async(dispatch_get_main_queue(), ^{
                                                          [self imageLoadingComplete];
                                                      });
@@ -268,6 +281,7 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         @autoreleasepool {
             @try {
+                //TODO: FIXME need fix gif on local maybe
                 self.underlyingImage = [UIImage imageWithContentsOfFile:url.path];
                 if (!_underlyingImage) {
                     MWLog(@"Error loading photo from path: %@", url.path);
@@ -336,7 +350,7 @@
 // Release if we can get it again from path or url
 - (void)unloadUnderlyingImage {
     _loadingInProgress = NO;
-	self.underlyingImage = nil;
+//	self.underlyingImage = nil;
 }
 
 - (void)imageLoadingComplete {

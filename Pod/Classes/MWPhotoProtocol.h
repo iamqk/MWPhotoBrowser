@@ -31,6 +31,7 @@
 // in -loadUnderlyingImageAndNotify: which may be called by the photo browser if this
 // methods returns nil.
 @property (nonatomic, strong) UIImage *underlyingImage;
+@property (nonatomic, strong) NSData *underlyingImageData;
 
 // Called when the browser has determined the underlying images is not
 // already loaded into memory but needs it.

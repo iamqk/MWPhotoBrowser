@@ -708,12 +708,14 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     }
 }
 
-- (UIImage *)imageForPhoto:(id<MWPhoto>)photo {
+- (id)imageForPhoto:(id<MWPhoto>)photo {
 	if (photo) {
 		// Get image or obtain in background
 		if ([photo underlyingImage]) {
 			return [photo underlyingImage];
-		} else {
+        } else if ([photo underlyingImageData]) {
+            return [photo underlyingImageData];
+        } else {
             [photo loadUnderlyingImageAndNotify];
 		}
 	}
@@ -752,7 +754,7 @@ static void * MWVideoPlayerObservation = &MWVideoPlayerObservation;
     id <MWPhoto> photo = [notification object];
     MWZoomingScrollView *page = [self pageDisplayingPhoto:photo];
     if (page) {
-        if ([photo underlyingImage]) {
+        if ([photo underlyingImage] || [photo underlyingImageData]) {
             // Successful load
             [page displayImage];
             [self loadAdjacentPhotosIfNecessary:photo];
